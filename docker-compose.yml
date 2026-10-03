@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: pf360
+      POSTGRES_USER: pf360
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no .env}
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U pf360 -d pf360"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://pf360:${POSTGRES_PASSWORD}@db:5432/pf360
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET forte no .env}
+      AI_API_KEY: ""
+      AI_BASE_URL: ""
+      AI_MODEL: ""
+      CORS_ORIGINS: http://localhost:5173
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes: ["./backend:/app"]
+    command: ["sh","-c","alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+  frontend:
+    image: nginx:alpine
+    ports: ["5173:80"]
+    volumes: ["./frontend:/usr/share/nginx/html:ro"]
+    depends_on: [api]
+volumes:
+  pgdata:

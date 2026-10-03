@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planejador Financeiro 360° — V2.2</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#172033;--muted:#687386;--line:#e4e8ef;--accent:#2563eb;--ok:#15803d;--warn:#b45309;--danger:#dc2626}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial}
+header{background:#111827;color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:19px;margin:0}.wrap{max-width:1350px;margin:auto;padding:20px}.login{max-width:430px;margin:9vh auto}
+nav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}.tab{background:#fff;border:1px solid var(--line);padding:9px 12px;border-radius:9px;cursor:pointer}.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px #00000008;margin-bottom:14px}
+.metric{font-size:25px;font-weight:750;margin-top:6px}.muted{color:var(--muted);font-size:13px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}form{display:grid;gap:10px}
+input,select,button{font:inherit;padding:10px;border-radius:9px;border:1px solid #d7dce5}button{cursor:pointer;background:var(--accent);color:#fff;border-color:var(--accent)}button.secondary{background:#fff;color:var(--ink)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}
+table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+.alert{padding:10px;border-radius:10px;background:#fff7ed;margin:7px 0}.alert.danger{background:#fef2f2}.alert.info{background:#eff6ff}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}
+.bar{height:11px;background:#e9edf3;border-radius:20px;overflow:hidden}.bar>span{display:block;height:100%;background:var(--accent)}
+.chart{display:flex;align-items:end;gap:10px;height:210px;padding-top:20px}.col{flex:1;min-width:35px;display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%}.barv{width:100%;max-width:50px;border-radius:7px 7px 0 0;background:#2563eb}.col small{font-size:10px;color:var(--muted);margin-top:5px}
+.score{font-size:44px;font-weight:800}.scorebox{display:flex;align-items:center;gap:18px}.list{display:grid;gap:9px}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:800px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Planejador Financeiro 360° <small>V2.3</small></h1><div id="userbar"></div></header>
+
+<div id="login" class="wrap login">
+<div class="card"><h2>Acessar</h2><form id="authForm">
+<input id="name" placeholder="Nome (somente cadastro)"><input id="email" type="email" placeholder="E-mail" required>
+<input id="password" type="password" placeholder="Senha" required>
+<input id="otp" inputmode="numeric" autocomplete="one-time-code" placeholder="Código MFA (se ativado)">
+<div class="actions"><button>Entrar</button><button type="button" class="secondary" id="register">Criar conta</button></div>
+</form><p id="authMsg" class="muted"></p></div></div>
+
+<div id="app" class="wrap hidden">
+<nav>
+<button class="tab active" data-tab="dashboard">Dashboard</button>
+<button class="tab" data-tab="transactions">Lançamentos</button>
+<button class="tab" data-tab="cards">Cartões/Faturas</button>
+<button class="tab" data-tab="installments">Parcelas</button>
+<button class="tab" data-tab="recurring">Recorrências</button>
+<button class="tab" data-tab="transfers">Transferências</button>
+<button class="tab" data-tab="budgets">Orçamento</button>
+<button class="tab" data-tab="goals">Metas</button>
+<button class="tab" data-tab="intelligence">Inteligência</button>
+<button class="tab" data-tab="alerts">Alertas</button>
+<button class="tab" data-tab="accounts">Contas</button>
+</nav>
+
+<section id="dashboard" class="section active">
+<div class="grid">
+<div class="card"><span class="muted">Saldo em contas</span><div class="metric" id="kCash">R$ 0</div></div>
+<div class="card"><span class="muted">Receita do mês</span><div class="metric" id="kIncome">R$ 0</div></div>
+<div class="card"><span class="muted">Despesa do mês</span><div class="metric" id="kExpense">R$ 0</div></div>
+<div class="card"><span class="muted">Resultado do mês</span><div class="metric" id="kNet">R$ 0</div></div>
+<div class="card"><span class="muted">Faturas abertas</span><div class="metric" id="kInvoice">R$ 0</div></div>
+<div class="card"><span class="muted">Dívidas</span><div class="metric" id="kDebt">R$ 0</div></div>
+</div>
+<div class="two">
+<div class="card"><h3>Fluxo dos últimos 6 meses</h3><div id="historyChart" class="chart"></div></div>
+<div class="card"><h3>Saúde financeira</h3><div class="scorebox"><div class="score" id="healthScore">—</div><div><b id="healthLevel">Calculando</b><p class="muted">Indicador composto de fluxo, reserva, dívidas, orçamento e metas.</p></div></div><div id="healthMetrics" class="muted"></div></div>
+</div>
+<div class="card"><h3>Alertas importantes</h3><div id="dashAlerts"></div></div>
+</section>
+
+<section id="transactions" class="section">
+<div class="card"><h2>Lançamento</h2><form id="txForm"><div class="formgrid">
+<input name="description" placeholder="Descrição" required><input name="category" placeholder="Categoria" value="Outros">
+<select name="type"><option value="expense">Despesa</option><option value="income">Receita</option></select>
+<input name="amount" type="number" step=".01" placeholder="Valor" required><input name="occurred_at" type="date" required>
+<select name="account_id" id="txAccount"><option value="">Sem conta</option></select><select name="card_id" id="txCard"><option value="">Sem cartão</option></select>
+</div><button>Salvar lançamento</button></form></div>
+<div class="card"><h3>Histórico</h3><div id="txList"></div></div>
+</section>
+
+<section id="cards" class="section">
+<div class="card"><h2>Cartão</h2><form id="cardForm"><div class="formgrid">
+<input name="name" placeholder="Nome do cartão" required><input name="brand" placeholder="Bandeira"><input name="last4" maxlength="4" placeholder="Últimos 4">
+<input name="credit_limit" type="number" step=".01" placeholder="Limite" required><input name="closing_day" type="number" min="1" max="28" placeholder="Fechamento" required><input name="due_day" type="number" min="1" max="28" placeholder="Vencimento" required>
+<select name="account_id" id="cardAccount"><option value="">Conta de pagamento opcional</option></select></div><button>Cadastrar cartão</button></form></div>
+<div class="card"><h3>Cartões</h3><div id="cardList"></div></div>
+<div class="card"><h3>Faturas</h3><div id="invoiceList"></div></div>
+</section>
+
+<section id="installments" class="section">
+<div class="card"><h2>Compra parcelada</h2><form id="installmentForm"><div class="formgrid">
+<input name="description" placeholder="Descrição" required><input name="category" value="Parcelado" placeholder="Categoria">
+<input name="total_amount" type="number" step=".01" placeholder="Valor total" required><input name="total_count" type="number" min="2" max="120" placeholder="Quantidade" required>
+<input name="first_due_date" type="date" required><select name="card_id" id="instCard"><option value="">Sem cartão</option></select><select name="account_id" id="instAccount"><option value="">Sem conta</option></select>
+</div><button>Criar parcelamento</button></form></div><div class="card"><div id="instList"></div></div>
+</section>
+
+<section id="recurring" class="section">
+<div class="card"><h2>Recorrência</h2><form id="recForm"><div class="formgrid">
+<input name="description" placeholder="Descrição" required><input name="category" value="Recorrente"><input name="amount" type="number" step=".01" placeholder="Valor" required>
+<select name="type"><option value="expense">Despesa</option><option value="income">Receita</option></select><select name="frequency"><option value="monthly">Mensal</option><option value="weekly">Semanal</option><option value="yearly">Anual</option></select>
+<input name="next_date" type="date" required><select name="account_id" id="recAccount"><option value="">Sem conta</option></select><select name="card_id" id="recCard"><option value="">Sem cartão</option></select>
+</div><button>Cadastrar recorrência</button></form></div><div class="card"><div id="recList"></div></div>
+</section>
+
+<section id="transfers" class="section">
+<div class="card"><h2>Transferência</h2><form id="transferForm"><div class="formgrid">
+<select name="from_account_id" id="fromAccount" required></select><select name="to_account_id" id="toAccount" required></select>
+<input name="amount" type="number" step=".01" placeholder="Valor" required><input name="transfer_date" type="date" required><input name="description" value="Transferência">
+</div><button>Transferir</button></form></div><div class="card"><div id="transferList"></div></div>
+</section>
+
+<section id="budgets" class="section">
+<div class="card"><h2>Orçamento</h2><form id="budgetForm"><div class="formgrid">
+<input name="category" placeholder="Categoria" required><input name="month" type="date" required><input name="limit_amount" type="number" step=".01" placeholder="Limite" required><input name="alert_percent" type="number" min="1" max="100" value="80">
+</div><button>Salvar orçamento</button></form><div class="actions" style="margin-top:10px"><button id="smartBudgetBtn" type="button">Gerar orçamento inteligente</button></div></div>
+<div class="card"><div id="budgetList"></div><div id="smartBudgetList"></div></div>
+</section>
+
+<section id="goals" class="section">
+<div class="card"><h2>Metas financeiras</h2><form id="goalForm"><div class="formgrid">
+<input name="name" placeholder="Nome da meta" required><input name="target_amount" type="number" step=".01" placeholder="Valor-alvo" required>
+<input name="current_amount" type="number" step=".01" value="0" placeholder="Valor atual"><input name="target_date" type="date">
+</div><button>Criar meta</button></form></div><div class="card"><div id="goalList"></div></div>
+</section>
+
+<section id="intelligence" class="section">
+<div class="two">
+<div class="card"><h2>Projeção de fluxo de caixa</h2><div class="actions"><select id="projMonths"><option>6</option><option>12</option><option>24</option></select><button id="projectBtn">Projetar</button></div><div id="projectionList"></div></div>
+<div class="card"><h2>Saúde financeira detalhada</h2><div id="healthDetail"></div></div>
+</div>
+<div class="card"><h2>Simulador de decisões</h2><p class="muted">Teste mudanças recorrentes, compras pontuais ou rendimento estimado sem alterar seus dados reais.</p>
+<form id="simForm"><div class="formgrid">
+<input name="months" type="number" value="12" min="1" max="120" placeholder="Meses">
+<input name="monthly_income_change" type="number" step=".01" value="0" placeholder="Mudança mensal na receita">
+<input name="monthly_expense_change" type="number" step=".01" value="0" placeholder="Mudança mensal na despesa">
+<input name="one_time_change" type="number" step=".01" value="0" placeholder="Impacto inicial (+/-)">
+<input name="annual_rate" type="number" step=".01" value="0" placeholder="Taxa anual %">
+</div><button>Simular decisão</button></form><div id="simResult"></div></div>
+</section>
+
+<section id="alerts" class="section"><div class="card"><div class="actions"><button id="refreshAlerts">Atualizar alertas</button></div><div id="alertList"></div></div></section>
+<section id="accounts" class="section"><div class="card"><h2>Conta</h2><form id="accountForm"><div class="formgrid"><input name="name" placeholder="Nome da conta" required><select name="kind"><option value="bank">Banco</option><option value="cash">Dinheiro</option></select><input name="balance" type="number" step=".01" placeholder="Saldo inicial"></div><button>Cadastrar conta</button></form></div><div class="card"><div id="accountList"></div></div></section>
+</div>
+
+<script>
+const API='http://localhost:8000/api';let token=localStorage.getItem('pf360_token');let refreshToken=localStorage.getItem('pf360_refresh');let state={accounts:[],cards:[]};
+const $=id=>document.getElementById(id),money=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v||0));
+function msg(t){$('authMsg').textContent=t}
+async function api(path,opt={},retry=true){opt.headers={...(opt.headers||{}),'Content-Type':'application/json',Authorization:`Bearer ${token}`};let r=await fetch(API+path,opt);if(r.status===401&&refreshToken&&retry&&path!=='/auth/refresh'){let rr=await fetch(API+'/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});if(rr.ok){let rd=await rr.json();token=rd.access_token;refreshToken=rd.refresh_token;localStorage.setItem('pf360_token',token);localStorage.setItem('pf360_refresh',refreshToken);return api(path,opt,false)}localStorage.removeItem('pf360_token');localStorage.removeItem('pf360_refresh');token=null;refreshToken=null;$('app').classList.add('hidden');$('login').classList.remove('hidden')}let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.detail||'Erro');return d}
+function formObj(f){return Object.fromEntries(new FormData(f).entries())}
+function norm(o){for(const k of ['amount','balance','credit_limit','total_amount','limit_amount','current_amount','target_amount','monthly_income_change','monthly_expense_change','one_time_change','annual_rate'])if(k in o&&o[k]!=='')o[k]=Number(o[k]);for(const k of ['account_id','card_id','from_account_id','to_account_id','total_count','closing_day','due_day','alert_percent','months'])if(k in o)o[k]=o[k]?Number(o[k]):null;return o}
+function showApp(){$('login').classList.add('hidden');$('app').classList.remove('hidden');loadAll()}
+function fill(id,items,label){$(id).innerHTML='<option value="">Sem seleção</option>'+items.map(x=>`<option value="${x.id}">${label(x)}</option>`).join('')}
+function fillSelects(){fill('txAccount',state.accounts,x=>x.name);fill('instAccount',state.accounts,x=>x.name);fill('recAccount',state.accounts,x=>x.name);fill('fromAccount',state.accounts,x=>x.name+' — '+money(x.balance));fill('toAccount',state.accounts,x=>x.name);fill('cardAccount',state.accounts,x=>x.name);fill('txCard',state.cards,x=>x.name);fill('instCard',state.cards,x=>x.name);fill('recCard',state.cards,x=>x.name)}
+async function loadAll(){try{state.accounts=await api('/finance/accounts');state.cards=await api('/finance/cards');fillSelects();await Promise.all([loadDashboard(),loadTx(),loadCards(),loadInvoices(),loadInstallments(),loadRecurring(),loadTransfers(),loadBudgets(),loadGoals(),loadAlerts(),loadHealth()])}catch(e){console.error(e)}}
+async function loadDashboard(){let d=await api('/intelligence/dashboard');$('kCash').textContent=money(d.kpis.cash_balance);$('kIncome').textContent=money(d.kpis.current_income);$('kExpense').textContent=money(d.kpis.current_expense);$('kNet').textContent=money(d.kpis.current_net);$('kInvoice').textContent=money(d.kpis.open_invoices);$('kDebt').textContent=money(d.kpis.debt_balance);$('historyChart').innerHTML=d.history.map(x=>{let max=Math.max(...d.history.map(y=>y.income),...d.history.map(y=>y.expense),1);let h=Math.max(8,Math.round(Number(x.expense)/max*150));return `<div class="col"><div class="barv" style="height:${h}px" title="Despesa ${money(x.expense)}"></div><small>${x.month.slice(5)}</small></div>`}).join('');$('dashAlerts').innerHTML=d.alerts.map(x=>`<div class="alert ${x.severity}"><b>${x.title}</b><br>${x.message}</div>`).join('')||'<span class="muted">Nenhum alerta pendente.</span>'}
+async function loadHealth(){let d=await api('/intelligence/health');$('healthScore').textContent=d.score;$('healthLevel').textContent=d.level;$('healthMetrics').innerHTML=`Reserva: ${d.metrics.reserve_months} meses · Dívida/receita: ${d.metrics.debt_ratio}% · Metas: ${d.metrics.goal_completion}%`;$('healthDetail').innerHTML=`<div class="scorebox"><div class="score">${d.score}</div><div><b>${d.level}</b><p class="muted">Fluxo ${d.components.fluxo}/25 · Reserva ${d.components.reserva}/25 · Dívidas ${d.components.dívidas}/25 · Orçamento ${d.components.orçamento}/15 · Metas ${d.components.metas}/10</p></div></div>`}
+async function loadTx(){let d=await api('/finance/transactions');$('txList').innerHTML='<table><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th></tr>'+d.map(x=>`<tr><td>${x.occurred_at}</td><td>${x.description}</td><td>${x.category}</td><td>${x.type}</td><td>${money(x.amount)}</td></tr>`).join('')+'</table>'}
+async function loadCards(){let d=state.cards;$('cardList').innerHTML=d.map(x=>`<p><b>${x.name}</b> ${x.last4?'•••• '+x.last4:''}<br><span class="muted">Limite ${money(x.credit_limit)} · fecha ${x.closing_day} · vence ${x.due_day}</span></p>`).join('')||'<p class="muted">Nenhum cartão.</p>'}
+async function loadInvoices(){let d=await api('/finance/invoices');$('invoiceList').innerHTML='<table><tr><th>Cartão</th><th>Referência</th><th>Vencimento</th><th>Status</th><th>Total</th><th>Pago</th><th></th></tr>'+d.map(x=>`<tr><td>#${x.card_id}</td><td>${x.reference_month}</td><td>${x.due_date}</td><td>${x.status}</td><td>${money(x.total)}</td><td>${money(x.paid_amount)}</td><td>${x.status!=='paid'?`<button onclick="payInvoice(${x.id},${Number(x.total)-Number(x.paid_amount)})">Pagar</button>`:''}</td></tr>`).join('')+'</table>'}
+async function payInvoice(id,v){try{let a=state.accounts.find(x=>x.kind==='bank'&&Number(x.balance)>=v)||state.accounts[0];if(!a)throw Error('Cadastre uma conta');await api(`/finance/invoices/${id}/pay?amount=${v}&account_id=${a.id}`,{method:'POST'});loadAll()}catch(e){alert(e.message)}}
+async function loadInstallments(){let d=await api('/finance/installments');$('instList').innerHTML=d.map(x=>`<h3>${x.plan.description} — ${money(x.plan.total_amount)} em ${x.plan.total_count}x</h3><table><tr><th>#</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr>${x.installments.map(i=>`<tr><td>${i.number}</td><td>${i.due_date}</td><td>${money(i.amount)}</td><td>${i.status}</td><td>${i.status!=='paid'?`<button onclick="payInst(${i.id})">Paga</button>`:''}</td></tr>`).join('')}</table>`).join('')||'<p class="muted">Nenhum parcelamento.</p>'}
+async function payInst(id){try{await api(`/finance/installments/${id}/pay`,{method:'POST'});loadAll()}catch(e){alert(e.message)}}
+async function loadRecurring(){let d=await api('/finance/recurrings');$('recList').innerHTML='<table><tr><th>Descrição</th><th>Valor</th><th>Frequência</th><th>Próxima</th><th></th></tr>'+d.map(x=>`<tr><td>${x.description}</td><td>${money(x.amount)}</td><td>${x.frequency}</td><td>${x.next_date}</td><td><button onclick="launchRec(${x.id})">Lançar</button></td></tr>`).join('')+'</table>'}
+async function launchRec(id){try{await api(`/finance/recurrings/${id}/launch`,{method:'POST'});loadAll()}catch(e){alert(e.message)}}
+async function loadTransfers(){let d=await api('/finance/transfers');$('transferList').innerHTML='<table><tr><th>Data</th><th>Origem</th><th>Destino</th><th>Valor</th></tr>'+d.map(x=>`<tr><td>${x.transfer_date}</td><td>#${x.from_account_id}</td><td>#${x.to_account_id}</td><td>${money(x.amount)}</td></tr>`).join('')+'</table>'}
+async function loadBudgets(){let d=await api('/finance/budgets');$('budgetList').innerHTML='<table><tr><th>Categoria</th><th>Limite</th><th>Gasto</th><th>Uso</th><th>Saldo</th></tr>'+d.map(x=>`<tr><td>${x.budget.category}</td><td>${money(x.budget.limit_amount)}</td><td>${money(x.spent)}</td><td>${x.percent.toFixed(0)}%</td><td>${money(x.remaining)}</td></tr>`).join('')+'</table>'}
+async function loadGoals(){let d=await api('/finance/goals');$('goalList').innerHTML=d.map(x=>{let p=x.target_amount?Math.min(100,Number(x.current_amount)/Number(x.target_amount)*100):0;return `<div class="card"><b>${x.name}</b><div class="bar"><span style="width:${p}%"></span></div><p class="muted">${money(x.current_amount)} de ${money(x.target_amount)} · ${p.toFixed(0)}%</p><button onclick="contribute(${x.id})">Adicionar valor</button></div>`}).join('')||'<p class="muted">Nenhuma meta.</p>'}
+async function contribute(id){let v=prompt('Valor da contribuição:');if(!v)return;try{await api(`/finance/goals/${id}/contribute`,{method:'POST',body:JSON.stringify({amount:Number(v)})});loadAll()}catch(e){alert(e.message)}}
+async function loadAlerts(){let d=await api('/finance/alerts');$('alertList').innerHTML=d.map(x=>`<div class="alert ${x.severity}"><b>${x.title}</b><br>${x.message}<br><small>${x.created_at}</small>${!x.read?`<br><button onclick="readAlert(${x.id})">Marcar lido</button>`:''}</div>`).join('')||'<p class="muted">Nenhum alerta.</p>'}
+async function readAlert(id){await api(`/finance/alerts/${id}/read`,{method:'POST'});loadAll()}
+async function projection(){let d=await api('/intelligence/cashflow-projection?months='+Number($('projMonths').value));$('projectionList').innerHTML='<table><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Resultado</th><th>Saldo projetado</th></tr>'+d.months.map(x=>`<tr><td>${x.month}</td><td>${money(x.income)}</td><td>${money(x.expense)}</td><td>${money(x.net)}</td><td>${money(x.projected_balance)}</td></tr>`).join('')+'</table><p class="muted">${d.method}</p>'}
+async function smartBudget(){let d=await api('/intelligence/budget-smart');$('smartBudgetList').innerHTML='<h3>Sugestões inteligentes</h3>'+d.suggestions.map(x=>`<div class="alert info"><b>${x.category}</b>: média ${money(x.average_3m)} → limite sugerido ${money(x.recommended_limit)}<br><small>${x.reason}</small></div>`).join('')||'<p class="muted">Cadastre despesas em pelo menos alguns meses para gerar sugestões.</p>'}
+async function simulate(){try{let d=norm(formObj($('simForm')));let r=await api('/intelligence/simulate',{method:'POST',body:JSON.stringify(d)});$('simResult').innerHTML=`<div class="card"><b>Saldo final projetado: ${money(r.final_balance)}</b><br>Resultado acumulado: ${money(r.total_net)}<table><tr><th>Mês</th><th>Receita</th><th>Despesa</th><th>Saldo</th></tr>${r.rows.slice(0,24).map(x=>`<tr><td>${x.month}</td><td>${money(x.income)}</td><td>${money(x.expense)}</td><td>${money(x.balance)}</td></tr>`).join('')}</table></div>`}catch(e){alert(e.message)}}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active')});
+$('authForm').onsubmit=async e=>{e.preventDefault();try{let r=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value,password:$('password').value,otp:$('otp').value||null})});let d=await r.json();if(!r.ok)throw Error(d.detail||'Falha');token=d.access_token;refreshToken=d.refresh_token;localStorage.setItem('pf360_token',token);localStorage.setItem('pf360_refresh',refreshToken);showApp()}catch(e){msg(e.message)}};
+$('register').onclick=async()=>{try{let r=await fetch(API+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('name').value,email:$('email').value,password:$('password').value})});let d=await r.json();if(!r.ok)throw Error(d.detail||'Falha');token=d.access_token;refreshToken=d.refresh_token;localStorage.setItem('pf360_token',token);localStorage.setItem('pf360_refresh',refreshToken);showApp()}catch(e){msg(e.message)}};
+$('accountForm').onsubmit=async e=>{e.preventDefault();try{await api('/finance/accounts',{method:'POST',body:JSON.stringify(norm(formObj(e.target)))});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('cardForm').onsubmit=async e=>{e.preventDefault();try{await api('/finance/cards',{method:'POST',body:JSON.stringify(norm(formObj(e.target)))});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('txForm').onsubmit=async e=>{e.preventDefault();try{let o=norm(formObj(e.target));if(!o.account_id)delete o.account_id;if(!o.card_id)delete o.card_id;await api('/finance/transactions',{method:'POST',body:JSON.stringify(o)});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('installmentForm').onsubmit=async e=>{e.preventDefault();try{let o=norm(formObj(e.target));if(!o.account_id)delete o.account_id;if(!o.card_id)delete o.card_id;await api('/finance/installments',{method:'POST',body:JSON.stringify(o)});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('recForm').onsubmit=async e=>{e.preventDefault();try{let o=norm(formObj(e.target));if(!o.account_id)delete o.account_id;if(!o.card_id)delete o.card_id;await api('/finance/recurrings',{method:'POST',body:JSON.stringify(o)});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('transferForm').onsubmit=async e=>{e.preventDefault();try{await api('/finance/transfers',{method:'POST',body:JSON.stringify(norm(formObj(e.target)))});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('budgetForm').onsubmit=async e=>{e.preventDefault();try{await api('/finance/budgets',{method:'POST',body:JSON.stringify(norm(formObj(e.target)))});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('goalForm').onsubmit=async e=>{e.preventDefault();try{let o=norm(formObj(e.target));if(!o.target_date)delete o.target_date;await api('/finance/goals',{method:'POST',body:JSON.stringify(o)});e.target.reset();loadAll()}catch(x){alert(x.message)}};
+$('refreshAlerts').onclick=async()=>{try{await api('/finance/alerts/refresh',{method:'POST'});loadAll()}catch(e){alert(e.message)}};
+$('projectBtn').onclick=projection;$('smartBudgetBtn').onclick=smartBudget;$('simForm').onsubmit=e=>{e.preventDefault();simulate()};
+if(token)showApp();
+</script>
+</body></html>

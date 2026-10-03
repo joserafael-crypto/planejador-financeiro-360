@@ -1,0 +1,15 @@
+[
+  "tests/test_agent.py::test_ai_tool_registry_is_read_only_and_strict",
+  "tests/test_agent.py::test_simulation_arguments_reject_unknown_fields",
+  "tests/test_agent.py::test_simulation_deterministic",
+  "tests/test_agent.py::test_simulation_limits_horizon",
+  "tests/test_agent_provider_e2e.py::test_real_provider_and_postgres_configuration_available",
+  "tests/test_agent_security.py::test_financial_parameter_bounds_are_enforced[payload0]",
+  "tests/test_agent_security.py::test_financial_parameter_bounds_are_enforced[payload1]",
+  "tests/test_agent_security.py::test_financial_parameter_bounds_are_enforced[payload2]",
+  "tests/test_agent_security.py::test_financial_parameter_bounds_are_enforced[payload3]",
+  "tests/test_agent_security.py::test_financial_parameter_bounds_are_enforced[payload4]",
+  "tests/test_agent_security.py::test_prompt_injection_cannot_become_tool_name",
+  "tests/test_agent_security.py::test_unknown_parameters_are_rejected",
+  "tests/test_agent_security.py::test_unknown_tool_is_rejected"
+]
